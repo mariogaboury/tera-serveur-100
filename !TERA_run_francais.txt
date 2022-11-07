@@ -1,0 +1,52 @@
+﻿Préparer:
+1. MS Windows Server 2012R2 + IIS et .NET 4.8
+2. MS SQL Server 2017 (pas express) et SSMS 17 ou supérieur
+3. NodeJS 18.1 ou supérieur
+4. Python 2.6.6 x86, pas le plus récent installé dans le dossier "c: \ Python26" ou vous avez besoin de fichiers .bat corrects qui exécutent les services Box et Steer
+5. Outils complémentaires (Notepad ++, 7zip, MySQL, .NET Framework 3.5 & 4.8, HeidiSQL, etc.) si nécessaire mais ses anciennes versions sont incluses dans "\TERA_SERVER\laragon\bin"
+6. Vérifiez que le PATH env inclut ""C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\130\Tools\Binn";"C:\Program Files (x86)\Microsoft SQL Server\140\Tools\Binn ";"C:\Program Files\Microsoft SQL Server\140\Tools\Binn";"C:\Program Files\Microsoft SQL Server\140\DTS\Binn";"C:\Program Files\Azure Data Studio\bin ";"C:\Program Files\Microsoft MPI\Bin";"C:\Python26\Scripts";"C:\Python26";"C:\Program Files\nodejs"; »
+
+Clause de non-responsabilité :
+Ne changez pas les chemins ou/et les mots de passe sans comprendre comment cela fonctionne ou vous rencontrez des problèmes et des problèmes au travail
+
+Correction:
+1. Si vous avez besoin de la console Web d'administration, installez IIS avec ASP .NET 4.x et .NET 4.8 ou supérieur
+- Activer la "fonctionnalité d'activation HTTP" pour IIS
+2. Décompressez l'archive "TERA_SERVER.rar" dans un dossier racine du lecteur "D:\"
+3. Basculez MS SQL Server en mode mixte et définissez le mot de passe "sa" sur "U6SjJk3ZyQhrv5tq"
+4. Ouvrez SSMS et connectez-vous avec le compte "sa", puis restaurez à partir des bases de données du dossier "\TERA_SERVER\BackUpDATA":
+- CollectionDB
+- LogDB_2800
+- PlanetDB_2800
+- SharedDB
+- WebAppDB
+5. Implémentation de l'API Tera pour le serveur de vente au détail en ligne TERA (patch 92/100) sur Node.js. L'API se compose de deux serveurs indépendants fonctionnant sur des ports différents (pour les besoins du portail/lanceur, et séparément pour les besoins du serveur Arbiter).
+5.1. Le laragon dans "\TERA_SERVER" inclut MySQL 5.7.38 avec toutes les bases de données nécessaires comme "teraapi", "box2db" et "steer3db", mais vous pouvez utiliser "\TERA_SERVER\BackUpDATA\MySQLdb.sql" pour tout importer dans votre propre Serveur MySQL
+6. Allez dans "\TERA_SERVER\arb_gw", modifiez "config_arb_gw.txt" puis remplacez l'IP "172.16.200.119" par l'IP de votre serveur (<SERVERIP>), laissez les ports tels quels
+7. Allez dans "\TERA_SERVER\TeraServers", modifiez "DeploymentConfig.xml" puis remplacez l'IP "172.16.200.119" par l'IP de votre serveur (<SERVERIP>), laissez les ports tels quels
+8. Allez dans "\TERA_SERVER\WebApp\AppResource", modifiez "WebAppConfig.xml" puis remplacez l'IP "127.0.0.1" par l'IP de votre serveur (<SERVERIP>), si le plan U utilise appelez ce service depuis un autre endroit
+9. Pour modifier les informations d'identification du contrôle d'administration du serveur, ouvrez avec un outil d'assemblage tel que "dnSpy" pour modifier le fichier "\TERA_SERVER\WebApp\bin\WebApp.dll", puis développez les sections de l'arborescence du projet "WebApp.dll> WebApp.ProtoBuf> LoginHelper" trouver string "if (loginId == "teadmin" && password == "111111111")" et remplacez Login/Password ce dont vous aviez besoin, recompilez, gtg et corrigez "\TERA_SERVER\WebApp\AppResource\WebAppConfig.xml" remplacez Login "teadmin" ce dont tu avais besoin
+9.1. Dans le fichier de configuration actuel "\TERA_SERVER\WebApp\bin\WebApp.dll" modifié pour fonctionner avec les serveurs "Box" et "Steer" et pour l'autorisation, vous pouvez utiliser le login : "gadmin" et le mot de passe : "111111111" pour le modifier, U devez vous connecter à "Steer web console" et définir votre mot de passe pour "gadmin" dans la section "Gérer l'utilisateur" -> "Afficher la liste des utilisateurs" -> "gadmin" -> "modifier", ou renommer le fichier "\TERA_SERVER\WebApp\bin \WebApp.dll.off" à "\TERA_SERVER\WebApp\bin\WebApp.dll" avec remplacer cela renvoie l'autorisation comme en position 8.
+10. Si le plan U utilise la console Web d'administration, vous devez lancer "IIS Manager" et :
+10.1. dans la section "Sites" désactiver/arrêter "Site Web par défaut"
+10.2. dans la section "Sites" créez "TERAWebApp" avec les paramètres :
+- "Nom du site" défini comme "TERAWebApp"
+- "Chemin physique" défini sur "d:\TERA_SERVER\WebApp"
+- dans la section « Binding », définissez le paramètre « Port » sur « 88 »
+- tous les autres paramètres sont conservés par défaut
+10.3. CheckIn "Pools d'applications" ajouter créer s'il n'existe pas de pool d'applications "TERAWebApp" avec des paramètres ou des paramètres corrects pour existe comme :
+- "Pool d'applications" défini comme "TERAWebApp"
+- "Version .NET CLR" définie sur "Version .NET CLR v4.0.30319"
+- "Mode de pipeline géré" défini sur "Classique"
+- tous les autres paramètres sont conservés par défaut
+
+Démarrez les serveurs pour jouer et faire des quêtes mais sans donjons (mange 32 Go) :
+1. "\SERVEUR_TERA\1. Laragon&IIS.lnk" pour démarrer mysql, serveur nginx - attendez que la zone de notification de la barre des tâches affiche l'icône de contrôle Laragon comme le bouton STOP
+2. "\SERVEUR_TERA\2. hub.lnk" - attendez que la console écrive le message "Acceptor :: Bind at 11001 Socket"
+3. "\TERA_SERVER\3. hub_gw.lnk" - attendez que la console écrive le message "Acceptor :: Bind at 8000 Socket"
+4. "\SERVEUR_TERA\4. tera-api.lnk" pour démarrer TeraAPI - attendez que la console écrive le message "$ Server ready $"
+5. "\TERA_SERVER\5. arb_gw.lnk" - attendez que la console écrive le message "Serveur prêt"
+6. "\TERA_SERVER\6. ArbiterServer.lnk" - attendez que la console écrive le message "$ Server ready $"
+7. "\TERA_SERVER\7. TopographyServer.lnk" - attendez que la console écrive le message "$ Server ready $"
+8. "\TERA_SERVER\8. WordlServer.lnk" - attendez que la console écrive le message "$ Server ready $"
+9. "\TERA_SERVER\J. GM_Proxyng.lnk" - wa
